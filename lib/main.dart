@@ -1,3 +1,4 @@
+import 'package:cosmic_explorer/router/app_router.dart';
 import 'package:cosmic_explorer/screens/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -18,7 +19,7 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Cosmic Explorer',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -36,7 +37,7 @@ class MainApp extends StatelessWidget {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.system,
-      home: const SplashScreen(),
+      routerConfig: AppRouter.router,
     );
   }
 }

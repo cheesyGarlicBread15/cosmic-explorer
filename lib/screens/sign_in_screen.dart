@@ -1,9 +1,10 @@
-import 'package:cosmic_explorer/screens/home_screen.dart';
+import 'package:cosmic_explorer/screens/main_nav/home_screen.dart';
 import 'package:cosmic_explorer/screens/sign_up_screen.dart';
 import 'package:cosmic_explorer/services/supabase_service.dart';
 import 'package:cosmic_explorer/widgets/auth_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -42,10 +43,7 @@ class _SignInScreenState extends State<SignInScreen> {
       );
 
       if (!mounted) return;
-
-      // Navigate to home screen on successful sign in
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()));
+      context.go('/home');
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to sign in: ${e.toString()}';
@@ -174,8 +172,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     const Text("Don't have an account?"),
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) => const SignUpScreen()));
+                        context.push('signin');
                       },
                       child: const Text('Sign Up'),
                     ),

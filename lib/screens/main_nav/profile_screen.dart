@@ -1,20 +1,17 @@
-import 'package:cosmic_explorer/screens/sign_in_screen.dart';
 import 'package:cosmic_explorer/services/supabase_service.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
 
   Future<void> _signOut(BuildContext context) async {
     try {
       await SupabaseService.signOut();
 
       if (context.mounted) {
-        // Navigate to sign in screen after sign5ing out
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const SignInScreen()),
-          (route) => false, // Remove all previous routes
-        );
+        // Navigate to sign in screen after signing out
+        context.go('/signin');
       }
     } catch (e) {
       if (context.mounted) {
@@ -34,15 +31,8 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: const Text('Profile'),
         automaticallyImplyLeading: false, // Remove back button
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _signOut(context),
-            tooltip: 'Sign Out',
-          ),
-        ],
       ),
       body: Center(
         child: Padding(
@@ -50,21 +40,25 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.check_circle_outline,
-                size: 80,
-                color: Colors.green,
+              const CircleAvatar(
+                radius: 60,
+                backgroundColor: Colors.deepPurple,
+                child: Icon(
+                  Icons.person,
+                  size: 60,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 32),
               Text(
-                'Welcome!',
+                'User Profile',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 16),
               Text(
-                'You are signed in as:',
+                'Signed in as:',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),

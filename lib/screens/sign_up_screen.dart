@@ -2,6 +2,7 @@ import 'package:cosmic_explorer/services/supabase_service.dart';
 import 'package:cosmic_explorer/widgets/auth_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -52,7 +53,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop(); // Go back to sign in screen
+        context.pop(); // Go back to sign in screen
       } else {
         setState(() {
           _errorMessage = 'Failed to create account. Please try again.';

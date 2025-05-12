@@ -1,8 +1,7 @@
-import 'package:cosmic_explorer/screens/home_screen.dart';
-import 'package:cosmic_explorer/screens/sign_in_screen.dart';
 import 'package:cosmic_explorer/services/supabase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:go_router/go_router.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -11,7 +10,8 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   // Animation controller
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -20,13 +20,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize animation controller
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    
+
     // Create fade animation
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -34,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         curve: const Interval(0.0, 0.65, curve: Curves.easeInOut),
       ),
     );
-    
+
     // Create scale animation
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(
@@ -42,10 +42,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         curve: const Interval(0.0, 0.65, curve: Curves.easeInOut),
       ),
     );
-    
+
     // Start the animation
     _controller.forward();
-    
+
     // Navigate after delay
     _navigateToNextScreen();
   }
@@ -57,39 +57,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   }
 
   Future<void> _navigateToNextScreen() async {
-    // Wait for animation and display time
+    // Add a small delay to show the splash screen
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
-    // Prepare the next screen
-    final Widget nextScreen = SupabaseService.isSignedIn
-        ? const HomeScreen()
-        : const SignInScreen();
-
-    // Create fade transition
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => nextScreen,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          const begin = 0.0;
-          const end = 1.0;
-          const curve = Curves.easeInOut;
-          
-          var tween = Tween(begin: begin, end: end).chain(
-            CurveTween(curve: curve),
-          );
-          
-          var fadeAnimation = animation.drive(tween);
-          
-          return FadeTransition(
-            opacity: fadeAnimation,
-            child: child,
-          );
-        },
-        transitionDuration: const Duration(milliseconds: 800),
-      ),
-    );
+    // Check if user is already signed in
+    if (SupabaseService.isSignedIn) {
+      // Navigate to home screen if already signed in
+      context.go('/home');
+    } else {
+      // Navigate to sign in screen if not signed in
+      context.go('/signin');
+    }
   }
 
   @override
@@ -124,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       },
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Title with animation
                     TweenAnimationBuilder<double>(
                       duration: const Duration(milliseconds: 1000),
@@ -137,7 +117,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                             offset: Offset(0, 20 * (1 - value)),
                             child: Text(
                               'Supabase Auth Demo',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineMedium
+                                  ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                   ),
                             ),
@@ -146,7 +129,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       },
                     ),
                     const SizedBox(height: 40),
-                    
+
                     // Spinner with animation
                     TweenAnimationBuilder<double>(
                       duration: const Duration(milliseconds: 800),
