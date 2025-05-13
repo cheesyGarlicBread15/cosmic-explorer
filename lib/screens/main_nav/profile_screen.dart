@@ -32,7 +32,6 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        automaticallyImplyLeading: false, // Remove back button
       ),
       body: Center(
         child: Padding(

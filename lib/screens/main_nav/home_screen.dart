@@ -8,7 +8,6 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
-        automaticallyImplyLeading: false, // Remove back button
       ),
       body: Center(
         child: Padding(

@@ -12,7 +12,6 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
-  // Animation controller
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
@@ -21,13 +20,11 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Initialize animation controller
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
 
-    // Create fade animation
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -35,7 +32,6 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Create scale animation
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -57,25 +53,25 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigateToNextScreen() async {
-    // Add a small delay to show the splash screen
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
-    // Check if user is already signed in
-    if (SupabaseService.isSignedIn) {
-      // Navigate to home screen if already signed in
-      context.go('/home');
-    } else {
-      // Navigate to sign in screen if not signed in
-      context.go('/signin');
-    }
+    // TODO: animation only for splash screen fade in and fade out, implement to others, edit in app_router.dart
+    // Create a fade-out animation before navigating
+    _controller.reverse().then((_) {
+      if (SupabaseService.isSignedIn) {
+        context.go('/home');
+      } else {
+        context.go('/signin');
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Center(
         child: AnimatedBuilder(
           animation: _controller,
@@ -96,7 +92,7 @@ class _SplashScreenState extends State<SplashScreen>
                         return Transform.scale(
                           scale: value,
                           child: const Icon(
-                            Icons.flutter_dash,
+                            Icons.rocket_launch,
                             size: 100,
                             color: Colors.deepPurple,
                           ),
@@ -116,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Transform.translate(
                             offset: Offset(0, 20 * (1 - value)),
                             child: Text(
-                              'Supabase Auth Demo',
+                              'Cosmic Explorer',
                               style: Theme.of(context)
                                   .textTheme
                                   .headlineMedium

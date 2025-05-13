@@ -1,16 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SupabaseService {
-  // Get instance of Supabase client
   static final supabase = Supabase.instance.client;
-
-  // Get current user
   static User? get currentUser => supabase.auth.currentUser;
-
-  // Get current session
   static Session? get currentSession => supabase.auth.currentSession;
-
-  // Check if user is signed in
   static bool get isSignedIn => currentUser != null;
 
   // Sign up with email and password

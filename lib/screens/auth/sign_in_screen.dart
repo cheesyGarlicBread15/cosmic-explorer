@@ -1,5 +1,3 @@
-import 'package:cosmic_explorer/screens/main_nav/home_screen.dart';
-import 'package:cosmic_explorer/screens/sign_up_screen.dart';
 import 'package:cosmic_explorer/services/supabase_service.dart';
 import 'package:cosmic_explorer/widgets/auth_text_field.dart';
 import 'package:flutter/material.dart';
@@ -172,7 +170,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     const Text("Don't have an account?"),
                     TextButton(
                       onPressed: () {
-                        context.push('signin');
+                        context.push('/signup');
                       },
                       child: const Text('Sign Up'),
                     ),

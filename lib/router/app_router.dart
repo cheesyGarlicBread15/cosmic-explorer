@@ -1,8 +1,6 @@
-import 'package:cosmic_explorer/screens/main_nav/gallery_screen.dart';
-import 'package:cosmic_explorer/screens/main_nav/home_screen.dart';
-import 'package:cosmic_explorer/screens/main_nav/profile_screen.dart';
-import 'package:cosmic_explorer/screens/sign_in_screen.dart';
-import 'package:cosmic_explorer/screens/sign_up_screen.dart';
+import 'package:cosmic_explorer/screens/auth/sign_in_screen.dart';
+import 'package:cosmic_explorer/screens/auth/sign_up_screen.dart';
+import 'package:cosmic_explorer/screens/image_details_screen.dart';
 import 'package:cosmic_explorer/screens/splash_screen.dart';
 import 'package:cosmic_explorer/services/supabase_service.dart';
 import 'package:cosmic_explorer/widgets/scaffold_with_navbar.dart';
@@ -18,87 +16,91 @@ class AppRouter {
     initialLocation: '/',
     debugLogDiagnostics: true,
 
-    // Define the routes
     routes: [
-      // Splash route
       GoRoute(
         path: '/',
         builder: (context, state) => const SplashScreen(),
       ),
-
-      // Authentication routes
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/signin',
         builder: (context, state) => const SignInScreen(),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/signup',
         builder: (context, state) => const SignUpScreen(),
       ),
 
-      // Main app shell with bottom navigation
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) {
-          return ScaffoldWithNavbar(child: child);
+          return ScaffoldWithNavbar(
+            location: state.uri.path,
+            child: child,
+          );
         },
         routes: [
-          // Home tab
           GoRoute(
             path: '/home',
-            builder: (context, state) => const HomeScreen(),
+            builder: (context, state) =>
+                Container(), // Empty container as the real widgets are in IndexedStack
           ),
-
-          // Gallery tab
           GoRoute(
-            path: '/gallery',
-            builder: (context, state) => const GalleryScreen(),
-          ),
-
-          // Profile tab
+              path: '/gallery',
+              builder: (context, state) => Container(),
+              routes: [
+                GoRoute(
+                  path: 'image/:id',
+                  parentNavigatorKey: _rootNavigatorKey,
+                  builder: (context, state) {
+                    final imageId = state.pathParameters['id'] ?? '0';
+                    return ImageDetailsScreen(imageId: imageId);
+                  },
+                )
+              ]),
           GoRoute(
             path: '/profile',
-            builder: (context, state) => const ProfileScreen(),
+            builder: (context, state) => Container(),
           ),
         ],
       ),
     ],
 
-    // Redirect based on authentication state
     redirect: (context, state) {
-      // Get the current path
-      final currentPath = state.matchedLocation;
+      final currentPath = state.uri.path;
 
-      // Splash screen is accessible regardless of authentication
+      // Allow splash screen for everyone
       if (currentPath == '/') {
         return null;
       }
 
-      // Check if user is signed in
       final isSignedIn = SupabaseService.isSignedIn;
-
-      // Auth routes
       final isAuthRoute = currentPath == '/signin' || currentPath == '/signup';
 
-      // If not signed in and not on an auth route, redirect to sign in
+      // if not signed in and the path is not auth route (like home, gallery and profile)
       if (!isSignedIn && !isAuthRoute) {
         return '/signin';
       }
 
-      // If signed in and on an auth route, redirect to home
-      if (isSignedIn && isAuthRoute) {
+      // if is signed in and path is sign up, return null since user will sign up another account
+      // sign in is detected after sign up due to supabase active session
+      if (isSignedIn && currentPath == 'signup') {
+        return null;
+      }
+
+      if (isSignedIn && currentPath == '/signin') {
         return '/home';
       }
 
-      // No redirect needed
       return null;
     },
 
-    // Error builder
     errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(title: const Text('Error')),
       body: Center(
         child: Text(
-          'Error: ${state.error}',
+          'Error: ${state.error?.toString() ?? "Unknown error"}',
           style: const TextStyle(color: Colors.red),
         ),
       ),

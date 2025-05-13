@@ -53,7 +53,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        context.pop(); // Go back to sign in screen
+        context.pop();
       } else {
         setState(() {
           _errorMessage = 'Failed to create account. Please try again.';
