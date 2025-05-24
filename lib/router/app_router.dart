@@ -1,6 +1,7 @@
+// lib/router/app_router.dart
 import 'package:cosmic_explorer/screens/auth/sign_in_screen.dart';
 import 'package:cosmic_explorer/screens/auth/sign_up_screen.dart';
-import 'package:cosmic_explorer/screens/image_details_screen.dart';
+import 'package:cosmic_explorer/screens/media_details_screen.dart';
 import 'package:cosmic_explorer/screens/splash_screen.dart';
 import 'package:cosmic_explorer/services/supabase_service.dart';
 import 'package:cosmic_explorer/widgets/scaffold_with_navbar.dart';
@@ -47,18 +48,19 @@ class AppRouter {
                 Container(), // Empty container as the real widgets are in IndexedStack
           ),
           GoRoute(
-              path: '/gallery',
-              builder: (context, state) => Container(),
-              routes: [
-                GoRoute(
-                  path: 'image/:id',
-                  parentNavigatorKey: _rootNavigatorKey,
-                  builder: (context, state) {
-                    final imageId = state.pathParameters['id'] ?? '0';
-                    return ImageDetailsScreen(imageId: imageId);
-                  },
-                )
-              ]),
+            path: '/gallery',
+            builder: (context, state) => Container(),
+            routes: [
+              GoRoute(
+                path: 'image/:id',
+                parentNavigatorKey: _rootNavigatorKey,
+                builder: (context, state) {
+                  final nasaId = state.pathParameters['id'] ?? '';
+                  return MediaDetailsScreen(nasaId: nasaId);
+                },
+              )
+            ],
+          ),
           GoRoute(
             path: '/profile',
             builder: (context, state) => Container(),
