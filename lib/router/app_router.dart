@@ -1,6 +1,7 @@
 // lib/router/app_router.dart
 import 'package:cosmic_explorer/screens/auth/sign_in_screen.dart';
 import 'package:cosmic_explorer/screens/auth/sign_up_screen.dart';
+import 'package:cosmic_explorer/screens/gallery_detail_screen.dart';
 import 'package:cosmic_explorer/screens/media_details_screen.dart';
 import 'package:cosmic_explorer/screens/splash_screen.dart';
 import 'package:cosmic_explorer/services/supabase_service.dart';
@@ -50,22 +51,52 @@ class AppRouter {
           GoRoute(
             path: '/gallery',
             builder: (context, state) => Container(),
-            routes: [
-              GoRoute(
-                path: 'image/:id',
-                parentNavigatorKey: _rootNavigatorKey,
-                builder: (context, state) {
-                  final nasaId = state.pathParameters['id'] ?? '';
-                  return MediaDetailsScreen(nasaId: nasaId);
-                },
-              )
-            ],
           ),
           GoRoute(
             path: '/profile',
             builder: (context, state) => Container(),
           ),
         ],
+      ),
+
+      // Media detail routes (more specific, should come first)
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/gallery/:galleryId/media/:nasaId',
+        builder: (context, state) {
+          final encodedGalleryId = state.pathParameters['galleryId'] ?? '';
+          final encodedNasaId = state.pathParameters['nasaId'] ?? '';
+          final galleryId = Uri.decodeComponent(encodedGalleryId);
+          final nasaId = Uri.decodeComponent(encodedNasaId);
+          
+          print('Router: Media detail route - galleryId: $galleryId, nasaId: $nasaId');
+          print('Router: Raw path parameters - galleryId: $encodedGalleryId, nasaId: $encodedNasaId');
+          print('Router: Full location: ${state.uri}');
+          
+          return MediaDetailsScreen(nasaId: nasaId);
+        },
+      ),
+
+      // Gallery detail routes (less specific, should come after)
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/gallery/:galleryId',
+        builder: (context, state) {
+          final encodedGalleryId = state.pathParameters['galleryId'] ?? '';
+          final galleryId = Uri.decodeComponent(encodedGalleryId);
+          print('Router: Gallery detail route with ID: $galleryId'); // Debug
+          return GalleryDetailScreen(galleryId: galleryId);
+        },
+      ),
+
+      // Fallback route for direct media access (redirect to recently viewed)
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/gallery/media/:nasaId',
+        redirect: (context, state) {
+          final nasaId = state.pathParameters['nasaId'] ?? '';
+          return '/gallery/recently_viewed/media/$nasaId';
+        },
       ),
     ],
 

@@ -21,6 +21,7 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
   List<String> _assetUrls = [];
   bool _isLoading = true;
   String? _error;
+  bool _isDescriptionExpanded = false; // Add this state variable
 
   @override
   void initState() {
@@ -367,7 +368,7 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
         ),
         const SizedBox(height: 20),
         
-        _buildInfoSection('Description', _mediaItem!.description),
+        _buildDescriptionSection(),
         
         const SizedBox(height: 16),
         _buildInfoGrid(),
@@ -376,6 +377,87 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
           const SizedBox(height: 20),
           _buildKeywordsSection(),
         ],
+      ],
+    );
+  }
+
+  Widget _buildExpandableDescription() {
+    const int maxLength = 300; // Optimal length for description
+    final description = _mediaItem!.description;
+    final bool isLongDescription = description.length > maxLength;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Description',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 8),
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 300),
+          crossFadeState: _isDescriptionExpanded || !isLongDescription
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          firstChild: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${description.substring(0, maxLength)}...',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      height: 1.5,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isDescriptionExpanded = true;
+                  });
+                },
+                child: Text(
+                  'Read More',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.deepPurple,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          secondChild: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      height: 1.5,
+                    ),
+              ),
+              if (isLongDescription) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isDescriptionExpanded = false;
+                    });
+                  },
+                  child: Text(
+                    'Show Less',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.deepPurple,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -416,6 +498,80 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
         ).toList(),
       );
     }
+  }
+
+  Widget _buildDescriptionSection() {
+    const int maxLength = 300;
+    final description = _mediaItem!.description;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Description',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 8),
+        RichText(
+          text: TextSpan(
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  height: 1.5,
+                ),
+            children: [
+              TextSpan(
+                text: description.length > maxLength && !_isDescriptionExpanded
+                    ? description.substring(0, maxLength)
+                    : description,
+              ),
+              if (description.length > maxLength && !_isDescriptionExpanded) ...[
+                const TextSpan(text: '... '),
+                WidgetSpan(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isDescriptionExpanded = true;
+                      });
+                    },
+                    child: Text(
+                      'Read More',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                            height: 1.5,
+                          ),
+                    ),
+                  ),
+                ),
+              ],
+              if (description.length > maxLength && _isDescriptionExpanded) ...[
+                const TextSpan(text: ' '),
+                WidgetSpan(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isDescriptionExpanded = false;
+                      });
+                    },
+                    child: Text(
+                      'Show Less',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.underline,
+                            height: 1.5,
+                          ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildInfoSection(String title, String content) {

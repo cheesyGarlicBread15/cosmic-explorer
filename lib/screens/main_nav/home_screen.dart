@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cosmic_explorer/models/nasa_media.dart';
 import 'package:cosmic_explorer/services/nasa_service.dart';
-import 'package:cosmic_explorer/services/viewing_history_service.dart';
+import 'package:cosmic_explorer/services/gallery_service.dart';
 import 'package:cosmic_explorer/widgets/media_card.dart';
 import 'package:cosmic_explorer/utils/responsive_utils.dart';
 
@@ -138,11 +138,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _navigateToDetails(NasaMediaItem mediaItem) async {
-    // Add to viewing history
-    await ViewingHistoryService.addToHistory(mediaItem);
+    // Add to recently viewed
+    await GalleryService.addToRecentlyViewed(mediaItem);
     
     if (mounted) {
-      context.push('/gallery/image/${mediaItem.nasaId}');
+      context.push('/gallery/recently_viewed/media/${mediaItem.nasaId}');
     }
   }
 
@@ -426,10 +426,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           if (_isLoadingMore)
-            SliverToBoxAdapter(
+            const SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: const Center(
+                padding: EdgeInsets.all(16.0),
+                child: Center(
                   child: CircularProgressIndicator(),
                 ),
               ),
