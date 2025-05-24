@@ -1,11 +1,16 @@
+// lib/screens/media_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cosmic_explorer/models/nasa_media.dart';
 import 'package:cosmic_explorer/services/nasa_service.dart';
-
+import 'package:cosmic_explorer/utils/responsive_utils.dart';
 
 class MediaDetailsScreen extends StatefulWidget {
   final String nasaId;
-  const MediaDetailsScreen({super.key, required this.nasaId});
+
+  const MediaDetailsScreen({
+    super.key,
+    required this.nasaId,
+  });
 
   @override
   State<MediaDetailsScreen> createState() => _MediaDetailsScreenState();
@@ -76,10 +81,13 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(_mediaItem?.title ?? 'Media Details'),
         backgroundColor: Colors.deepPurple.withOpacity(0.1),
+        centerTitle: !isMobile,
       ),
       body: _buildBody(),
     );
@@ -102,7 +110,7 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
     if (_error != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: ResponsiveUtils.getContentPadding(context),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -138,6 +146,16 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
       );
     }
 
+    final shouldUseWideLayout = ResponsiveUtils.shouldUseWideLayout(context);
+
+    if (shouldUseWideLayout) {
+      return _buildWideLayout();
+    } else {
+      return _buildNarrowLayout();
+    }
+  }
+
+  Widget _buildNarrowLayout() {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,10 +168,56 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
     );
   }
 
+  Widget _buildWideLayout() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveUtils.getMaxContentWidth(context),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: ResponsiveUtils.getContentPadding(context),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left side - Media preview
+                Expanded(
+                  flex: 2,
+                  child: Card(
+                    elevation: 4,
+                    clipBehavior: Clip.antiAlias,
+                    child: _buildMediaPreview(),
+                  ),
+                ),
+                const SizedBox(width: 32),
+                // Right side - Media info
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildMediaInfoContent(),
+                      if (_assetUrls.isNotEmpty) ...[
+                        const SizedBox(height: 32),
+                        _buildAssetUrlsContent(),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildMediaPreview() {
+    final imageHeight = ResponsiveUtils.getDetailImageHeight(context);
+    
     return Container(
       width: double.infinity,
-      height: 300,
+      height: imageHeight,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -192,6 +256,7 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
             )
           else
             _buildPlaceholder(),
+          
           Positioned(
             top: 16,
             right: 16,
@@ -267,54 +332,90 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
 
   Widget _buildMediaInfo() {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _mediaItem!.title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+      padding: ResponsiveUtils.getContentPadding(context),
+      child: _buildMediaInfoContent(),
+    );
+  }
+
+  Widget _buildMediaInfoContent() {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _mediaItem!.title,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: isMobile ? 20 : 24,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.deepPurple.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            'NASA ID: ${_mediaItem!.nasaId}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.deepPurple,
+                  fontWeight: FontWeight.w500,
                 ),
           ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.deepPurple.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              'NASA ID: ${_mediaItem!.nasaId}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.deepPurple,
-                    fontWeight: FontWeight.w500,
-                  ),
-            ),
-          ),
+        ),
+        const SizedBox(height: 20),
+        
+        _buildInfoSection('Description', _mediaItem!.description),
+        
+        const SizedBox(height: 16),
+        _buildInfoGrid(),
+        
+        if (_mediaItem!.keywords.isNotEmpty) ...[
           const SizedBox(height: 20),
-          _buildInfoSection('Description', _mediaItem!.description),
-          const SizedBox(height: 16),
-          _buildInfoRow('Date Created', _mediaItem!.formattedDate),
-          if (_mediaItem!.center != null) ...[
-            const SizedBox(height: 8),
-            _buildInfoRow('NASA Center', _mediaItem!.center!),
-          ],
-          if (_mediaItem!.photographer != null) ...[
-            const SizedBox(height: 8),
-            _buildInfoRow('Photographer', _mediaItem!.photographer!),
-          ],
-          if (_mediaItem!.location != null) ...[
-            const SizedBox(height: 8),
-            _buildInfoRow('Location', _mediaItem!.location!),
-          ],
-          if (_mediaItem!.keywords.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            _buildKeywordsSection(),
-          ],
+          _buildKeywordsSection(),
         ],
-      ),
+      ],
     );
+  }
+
+  Widget _buildInfoGrid() {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    final infoItems = <MapEntry<String, String>>[];
+    
+    infoItems.add(MapEntry('Date Created', _mediaItem!.formattedDate));
+    if (_mediaItem!.center != null) {
+      infoItems.add(MapEntry('NASA Center', _mediaItem!.center!));
+    }
+    if (_mediaItem!.photographer != null) {
+      infoItems.add(MapEntry('Photographer', _mediaItem!.photographer!));
+    }
+    if (_mediaItem!.location != null) {
+      infoItems.add(MapEntry('Location', _mediaItem!.location!));
+    }
+
+    if (isMobile) {
+      return Column(
+        children: infoItems.map((entry) => 
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildInfoRow(entry.key, entry.value),
+          ),
+        ).toList(),
+      );
+    } else {
+      return Wrap(
+        spacing: 32,
+        runSpacing: 16,
+        children: infoItems.map((entry) => 
+          SizedBox(
+            width: 250,
+            child: _buildInfoRow(entry.key, entry.value),
+          ),
+        ).toList(),
+      );
+    }
   }
 
   Widget _buildInfoSection(String title, String content) {
@@ -404,74 +505,78 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
 
   Widget _buildAssetUrls() {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Available Assets',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[300]!),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              children: _assetUrls.asMap().entries.map((entry) {
-                final index = entry.key;
-                final url = entry.value;
-                final isLast = index == _assetUrls.length - 1;
+      padding: ResponsiveUtils.getContentPadding(context),
+      child: _buildAssetUrlsContent(),
+    );
+  }
 
-                return Container(
-                  decoration: BoxDecoration(
-                    border: isLast
-                        ? null
-                        : Border(bottom: BorderSide(color: Colors.grey[300]!)),
-                  ),
-                  child: ListTile(
-                    leading: Icon(
-                      _getAssetIcon(url),
-                      color: Colors.deepPurple,
-                    ),
-                    title: Text(
-                      _getAssetName(url),
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    subtitle: Text(
-                      url,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: const Icon(Icons.open_in_new, size: 20),
-                    onTap: () {
-                      // You can implement URL launching here if needed
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Asset URL: $url'),
-                          action: SnackBarAction(
-                            label: 'Copy',
-                            onPressed: () {
-                              // Implement clipboard copy if needed
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
+  Widget _buildAssetUrlsContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Available Assets',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey[300]!),
+            borderRadius: BorderRadius.circular(8),
           ),
-        ],
-      ),
+          child: Column(
+            children: _assetUrls.asMap().entries.map((entry) {
+              final index = entry.key;
+              final url = entry.value;
+              final isLast = index == _assetUrls.length - 1;
+              
+              return Container(
+                decoration: BoxDecoration(
+                  border: isLast 
+                      ? null 
+                      : Border(bottom: BorderSide(color: Colors.grey[300]!)),
+                ),
+                child: ListTile(
+                  leading: Icon(
+                    _getAssetIcon(url),
+                    color: Colors.deepPurple,
+                  ),
+                  title: Text(
+                    _getAssetName(url),
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  subtitle: Text(
+                    url,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: const Icon(Icons.open_in_new, size: 20),
+                  onTap: () {
+                    // You can implement URL launching here if needed
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Asset URL: $url'),
+                        action: SnackBarAction(
+                          label: 'Copy',
+                          onPressed: () {
+                            // Implement clipboard copy if needed
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 

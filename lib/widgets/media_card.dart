@@ -1,6 +1,7 @@
 // lib/widgets/media_card.dart
 import 'package:flutter/material.dart';
 import 'package:cosmic_explorer/models/nasa_media.dart';
+import 'package:cosmic_explorer/utils/responsive_utils.dart';
 
 class MediaCard extends StatelessWidget {
   final NasaMediaItem mediaItem;
@@ -14,11 +15,13 @@ class MediaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    
     return Card(
-      elevation: 4,
+      elevation: isMobile ? 4 : 6,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
       ),
       child: InkWell(
         onTap: onTap,
@@ -27,32 +30,34 @@ class MediaCard extends StatelessWidget {
           children: [
             Expanded(
               flex: 3,
-              child: _buildMediaPreview(),
+              child: _buildMediaPreview(context),
             ),
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildMediaTypeChip(),
-                    const SizedBox(height: 8),
+                    _buildMediaTypeChip(context),
+                    SizedBox(height: isMobile ? 8 : 12),
                     Expanded(
                       child: Text(
                         mediaItem.title,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
+                              fontSize: isMobile ? 14 : 16,
                             ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: isMobile ? 4 : 6),
                     Text(
                       mediaItem.formattedDate,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
+                            fontSize: isMobile ? 11 : 12,
                           ),
                     ),
                   ],
@@ -65,7 +70,7 @@ class MediaCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMediaPreview() {
+  Widget _buildMediaPreview(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -90,15 +95,15 @@ class MediaCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
-                  return _buildLoadingPlaceholder();
+                  return _buildLoadingPlaceholder(context);
                 },
                 errorBuilder: (context, error, stackTrace) {
-                  return _buildErrorPlaceholder();
+                  return _buildErrorPlaceholder(context);
                 },
               ),
             )
           else
-            _buildDefaultPlaceholder(),
+            _buildDefaultPlaceholder(context),
           
           // Media type overlay
           Positioned(
@@ -121,7 +126,9 @@ class MediaCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMediaTypeChip() {
+  Widget _buildMediaTypeChip(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    
     Color chipColor;
     switch (mediaItem.mediaType.toLowerCase()) {
       case 'image':
@@ -138,7 +145,10 @@ class MediaCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 8 : 10, 
+        vertical: isMobile ? 4 : 5,
+      ),
       decoration: BoxDecoration(
         color: chipColor.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
@@ -148,14 +158,14 @@ class MediaCard extends StatelessWidget {
         mediaItem.mediaType.toUpperCase(),
         style: TextStyle(
           color: chipColor,
-          fontSize: 10,
+          fontSize: isMobile ? 10 : 11,
           fontWeight: FontWeight.bold,
         ),
       ),
     );
   }
 
-  Widget _buildLoadingPlaceholder() {
+  Widget _buildLoadingPlaceholder(BuildContext context) {
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -166,7 +176,9 @@ class MediaCard extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorPlaceholder() {
+  Widget _buildErrorPlaceholder(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -176,15 +188,15 @@ class MediaCard extends StatelessWidget {
         children: [
           Icon(
             Icons.broken_image,
-            size: 48,
+            size: isMobile ? 40 : 48,
             color: Colors.grey[600],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isMobile ? 6 : 8),
           Text(
             'Image not available',
             style: TextStyle(
               color: Colors.grey[600],
-              fontSize: 12,
+              fontSize: isMobile ? 10 : 12,
             ),
           ),
         ],
@@ -192,7 +204,9 @@ class MediaCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDefaultPlaceholder() {
+  Widget _buildDefaultPlaceholder(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    
     IconData iconData;
     switch (mediaItem.mediaType.toLowerCase()) {
       case 'video':
@@ -214,15 +228,15 @@ class MediaCard extends StatelessWidget {
         children: [
           Icon(
             iconData,
-            size: 48,
+            size: isMobile ? 40 : 48,
             color: Colors.grey[600],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: isMobile ? 6 : 8),
           Text(
             mediaItem.mediaType.toUpperCase(),
             style: TextStyle(
               color: Colors.grey[600],
-              fontSize: 12,
+              fontSize: isMobile ? 10 : 12,
               fontWeight: FontWeight.bold,
             ),
           ),

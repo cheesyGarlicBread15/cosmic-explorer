@@ -1,8 +1,10 @@
+// lib/screens/gallery_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cosmic_explorer/models/nasa_media.dart';
 import 'package:cosmic_explorer/services/viewing_history_service.dart';
 import 'package:cosmic_explorer/widgets/media_card.dart';
+import 'package:cosmic_explorer/utils/responsive_utils.dart';
 
 class GalleryScreen extends StatefulWidget {
   const GalleryScreen({super.key});
@@ -125,10 +127,13 @@ class _GalleryScreenState extends State<GalleryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gallery'),
         backgroundColor: Colors.deepPurple.withOpacity(0.1),
+        centerTitle: !isMobile,
         actions: [
           if (_recentlyViewed.isNotEmpty)
             PopupMenuButton<String>(
@@ -153,7 +158,14 @@ class _GalleryScreenState extends State<GalleryScreen> {
             ),
         ],
       ),
-      body: _buildBody(),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: ResponsiveUtils.getMaxContentWidth(context),
+          ),
+          child: _buildBody(),
+        ),
+      ),
     );
   }
 
@@ -184,33 +196,38 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 
   Widget _buildEmptyState() {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    final padding = ResponsiveUtils.getContentPadding(context);
+    
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: padding,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.history,
-              size: 80,
+              size: isMobile ? 80 : 120,
               color: Colors.grey[400],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: isMobile ? 24 : 32),
             Text(
               'No viewing history yet',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: Colors.grey[600],
+                    fontSize: isMobile ? 20 : 24,
                   ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: isMobile ? 16 : 20),
             Text(
               'Browse some NASA media from the home screen to see them here!',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
+                    fontSize: isMobile ? 14 : 16,
                   ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: isMobile ? 32 : 40),
             ElevatedButton.icon(
               onPressed: () {
                 // Navigate to home tab
@@ -219,9 +236,9 @@ class _GalleryScreenState extends State<GalleryScreen> {
               icon: const Icon(Icons.explore),
               label: const Text('Explore NASA Media'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 24 : 32,
+                  vertical: isMobile ? 12 : 16,
                 ),
               ),
             ),
@@ -232,8 +249,11 @@ class _GalleryScreenState extends State<GalleryScreen> {
   }
 
   Widget _buildFilterSection() {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    final padding = ResponsiveUtils.getContentPadding(context);
+    
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: padding,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         boxShadow: [
@@ -244,18 +264,64 @@ class _GalleryScreenState extends State<GalleryScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Text(
+      child: isMobile ? _buildMobileFilterRow() : _buildDesktopFilterRow(),
+    );
+  }
+
+  Widget _buildMobileFilterRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
             'Recently Viewed (${_filteredItems.length})',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
-          const Spacer(),
-          DropdownButton<String>(
+        ),
+        DropdownButton<String>(
+          value: _selectedFilter ?? 'All',
+          underline: const SizedBox(),
+          items: _filterTypes.map((type) {
+            return DropdownMenuItem(
+              value: type,
+              child: Text(type),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedFilter = value;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopFilterRow() {
+    return Row(
+      children: [
+        Text(
+          'Recently Viewed (${_filteredItems.length})',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const Spacer(),
+        SizedBox(
+          width: 150,
+          child: DropdownButtonFormField<String>(
             value: _selectedFilter ?? 'All',
-            underline: const SizedBox(),
+            decoration: InputDecoration(
+              labelText: 'Filter',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+            ),
             items: _filterTypes.map((type) {
               return DropdownMenuItem(
                 value: type,
@@ -268,8 +334,8 @@ class _GalleryScreenState extends State<GalleryScreen> {
               });
             },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -277,25 +343,27 @@ class _GalleryScreenState extends State<GalleryScreen> {
     final filteredItems = _filteredItems;
     
     if (filteredItems.isEmpty) {
+      final isMobile = ResponsiveUtils.isMobile(context);
+      
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: ResponsiveUtils.getContentPadding(context),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.filter_list_off,
-                size: 64,
+                size: isMobile ? 64 : 80,
                 color: Colors.grey[400],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: isMobile ? 16 : 20),
               Text(
                 'No ${_selectedFilter?.toLowerCase()} media in history',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: isMobile ? 8 : 12),
               Text(
                 'Try a different filter or explore more content',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -311,12 +379,12 @@ class _GalleryScreenState extends State<GalleryScreen> {
     return RefreshIndicator(
       onRefresh: _loadRecentlyViewed,
       child: GridView.builder(
-        padding: const EdgeInsets.all(16.0),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        padding: ResponsiveUtils.getScreenPadding(context),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: ResponsiveUtils.getHistoryGridCount(context),
           childAspectRatio: 0.75,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+          crossAxisSpacing: ResponsiveUtils.getGridSpacing(context),
+          mainAxisSpacing: ResponsiveUtils.getGridSpacing(context),
         ),
         itemCount: filteredItems.length,
         itemBuilder: (context, index) {
@@ -366,7 +434,7 @@ class _GalleryScreenState extends State<GalleryScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Viewed ${item.formattedViewedDate}',
-                      style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.green[600],
                             fontSize: 11,
                           ),

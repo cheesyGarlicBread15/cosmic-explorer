@@ -1,10 +1,11 @@
+// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cosmic_explorer/models/nasa_media.dart';
 import 'package:cosmic_explorer/services/nasa_service.dart';
 import 'package:cosmic_explorer/services/viewing_history_service.dart';
 import 'package:cosmic_explorer/widgets/media_card.dart';
-
+import 'package:cosmic_explorer/utils/responsive_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -147,23 +148,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cosmic Explorer'),
         backgroundColor: Colors.deepPurple.withOpacity(0.1),
+        centerTitle: !isMobile,
       ),
-      body: Column(
-        children: [
-          _buildSearchAndFilter(),
-          Expanded(child: _buildBody()),
-        ],
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: ResponsiveUtils.getMaxContentWidth(context),
+          ),
+          child: Column(
+            children: [
+              _buildSearchAndFilter(),
+              Expanded(child: _buildBody()),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildSearchAndFilter() {
+    final isMobile = ResponsiveUtils.isMobile(context);
+    final padding = ResponsiveUtils.getContentPadding(context);
+    
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: padding,
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         boxShadow: [
@@ -177,72 +191,138 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           // Search bar
-          TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search NASA media...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          _currentQuery = '';
-                        });
-                        _loadInitialMedia();
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: ResponsiveUtils.getSearchBarMaxWidth(context),
               ),
-            ),
-            onSubmitted: (_) => _onSearch(),
-          ),
-          const SizedBox(height: 12),
-          // Filter and search button row
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _selectedMediaType ?? 'All',
-                  decoration: InputDecoration(
-                    labelText: 'Media Type',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  items: _mediaTypes.map((type) {
-                    return DropdownMenuItem(
-                      value: type,
-                      child: Text(type),
-                    );
-                  }).toList(),
-                  onChanged: _onMediaTypeChanged,
-                ),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: _onSearch,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search NASA media...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _currentQuery = '';
+                            });
+                            _loadInitialMedia();
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Search'),
+                onSubmitted: (_) => _onSearch(),
               ),
-            ],
+            ),
           ),
+          SizedBox(height: isMobile ? 12 : 16),
+          // Filter and search button row
+          if (isMobile)
+            _buildMobileFilterRow()
+          else
+            _buildDesktopFilterRow(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMobileFilterRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: _selectedMediaType ?? 'All',
+            decoration: InputDecoration(
+              labelText: 'Media Type',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+            ),
+            items: _mediaTypes.map((type) {
+              return DropdownMenuItem(
+                value: type,
+                child: Text(type),
+              );
+            }).toList(),
+            onChanged: _onMediaTypeChanged,
+          ),
+        ),
+        const SizedBox(width: 12),
+        ElevatedButton(
+          onPressed: _onSearch,
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 16,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text('Search'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopFilterRow() {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveUtils.getSearchBarMaxWidth(context),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 200,
+              child: DropdownButtonFormField<String>(
+                value: _selectedMediaType ?? 'All',
+                decoration: InputDecoration(
+                  labelText: 'Media Type',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                ),
+                items: _mediaTypes.map((type) {
+                  return DropdownMenuItem(
+                    value: type,
+                    child: Text(type),
+                  );
+                }).toList(),
+                onChanged: _onMediaTypeChanged,
+              ),
+            ),
+            const SizedBox(width: 24),
+            ElevatedButton(
+              onPressed: _onSearch,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Search'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -264,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_error != null && _mediaItems.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: ResponsiveUtils.getContentPadding(context),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -323,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
         controller: _scrollController,
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.all(16.0),
+            padding: ResponsiveUtils.getScreenPadding(context),
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -337,19 +417,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
                 childCount: _mediaItems.length,
               ),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.8,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: ResponsiveUtils.getGridCrossAxisCount(context),
+                childAspectRatio: ResponsiveUtils.getGridChildAspectRatio(context),
+                crossAxisSpacing: ResponsiveUtils.getGridSpacing(context),
+                mainAxisSpacing: ResponsiveUtils.getGridSpacing(context),
               ),
             ),
           ),
           if (_isLoadingMore)
-            const SliverToBoxAdapter(
+            SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Center(
+                padding: const EdgeInsets.all(16.0),
+                child: const Center(
                   child: CircularProgressIndicator(),
                 ),
               ),
@@ -358,5 +438,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
 }
