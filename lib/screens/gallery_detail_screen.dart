@@ -1,4 +1,3 @@
-// lib/screens/gallery_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cosmic_explorer/models/gallery.dart';
@@ -53,10 +52,8 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
       List<NasaMediaItem> mediaItems = [];
       
       if (gallery.isRecentlyViewed) {
-        // Load recently viewed media
         mediaItems = await GalleryService.getRecentlyViewedMedia();
       } else {
-        // Load media items by searching for each NASA ID
         for (final nasaId in gallery.mediaIds) {
           try {
             final collection = await NasaService.searchMedia(
@@ -72,7 +69,6 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
             mediaItems.add(foundItem);
           } catch (e) {
             print('Failed to load media $nasaId: $e');
-            // Continue loading other items
           }
         }
       }
@@ -95,7 +91,6 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
 
     try {
       if (_gallery!.isRecentlyViewed) {
-        // For recently viewed, we can't remove items directly
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Cannot remove items from Recently Viewed gallery'),
@@ -146,7 +141,6 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
   }
 
   void _navigateToDetails(NasaMediaItem mediaItem) {
-    // Add to recently viewed if not already in recently viewed gallery
     if (!(_gallery?.isRecentlyViewed ?? false)) {
       GalleryService.addToRecentlyViewed(mediaItem);
     }
@@ -352,7 +346,6 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
   }
 
   Widget _buildFilterSection() {
-    final isMobile = ResponsiveUtils.isMobile(context);
     final padding = ResponsiveUtils.getContentPadding(context);
     
     return Container(
@@ -433,7 +426,7 @@ class _GalleryDetailScreenState extends State<GalleryDetailScreen> {
           return MediaCard(
             mediaItem: mediaItem,
             onTap: () => _navigateToDetails(mediaItem),
-            showAddToGallery: false, // Don't show add to gallery in gallery detail
+            showAddToGallery: false,
           );
         },
       ),

@@ -1,4 +1,3 @@
-// lib/widgets/media_card.dart
 import 'package:flutter/material.dart';
 import 'package:cosmic_explorer/models/nasa_media.dart';
 import 'package:cosmic_explorer/models/gallery.dart';
@@ -46,7 +45,6 @@ class MediaCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Fixed: Removed Expanded wrapper and used Flexible instead
                         Flexible(
                           child: Text(
                             mediaItem.title,

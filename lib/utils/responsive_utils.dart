@@ -1,4 +1,3 @@
-// lib/utils/responsive_utils.dart
 import 'package:flutter/material.dart';
 
 class ResponsiveUtils {

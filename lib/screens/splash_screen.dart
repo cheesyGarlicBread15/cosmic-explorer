@@ -57,8 +57,6 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    // TODO: animation only for splash screen fade in and fade out, implement to others, edit in app_router.dart
-    // Create a fade-out animation before navigating
     _controller.reverse().then((_) {
       if (SupabaseService.isSignedIn) {
         context.go('/home');

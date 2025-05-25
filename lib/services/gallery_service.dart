@@ -1,4 +1,3 @@
-// lib/services/gallery_service.dart
 import 'package:cosmic_explorer/models/gallery.dart';
 import 'package:cosmic_explorer/models/nasa_media.dart';
 import 'package:cosmic_explorer/services/supabase_service.dart';
@@ -110,7 +109,6 @@ class GalleryService {
     if (user == null) throw Exception('User not authenticated');
 
     if (gallery.isRecentlyViewed) {
-      // Recently viewed is handled separately
       return;
     }
 
@@ -128,7 +126,7 @@ class GalleryService {
     final user = SupabaseService.currentUser;
     if (user == null) throw Exception('User not authenticated');
 
-    if (id == 'recently_viewed') return; // Can't delete recently viewed
+    if (id == 'recently_viewed') return;
     
     await _supabase
         .from('galleries')

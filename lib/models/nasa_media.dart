@@ -1,4 +1,3 @@
-// lib/models/nasa_media.dart
 class NasaMediaCollection {
   final List<NasaMediaItem> items;
   final int totalHits;
@@ -32,7 +31,7 @@ class NasaMediaItem {
   final DateTime? dateCreated;
   final String? center;
   final List<NasaMediaLink> links;
-  final DateTime? viewedAt; // For tracking when it was viewed
+  final DateTime? viewedAt;
 
   NasaMediaItem({
     required this.nasaId,

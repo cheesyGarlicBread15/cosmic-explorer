@@ -1,4 +1,3 @@
-// lib/models/gallery.dart
 import 'package:cosmic_explorer/models/nasa_media.dart';
 
 class Gallery {
@@ -7,9 +6,9 @@ class Gallery {
   final String? description;
   final DateTime dateCreated;
   final DateTime lastModified;
-  final List<String> mediaIds; // NASA IDs of media items
-  final bool isRecentlyViewed; // Special flag for recently viewed gallery
-  final String? coverImageUrl; // URL for gallery cover image
+  final List<String> mediaIds;
+  final bool isRecentlyViewed;
+  final String? coverImageUrl;
 
   Gallery({
     required this.id,
@@ -94,7 +93,7 @@ class Gallery {
     );
   }
 
-  // JSON serialization
+  // JSON 
   Map<String, dynamic> toJson() {
     return {
       'id': id,

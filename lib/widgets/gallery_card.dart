@@ -1,4 +1,3 @@
-// lib/widgets/gallery_card.dart
 import 'package:flutter/material.dart';
 import 'package:cosmic_explorer/models/gallery.dart';
 import 'package:cosmic_explorer/utils/responsive_utils.dart';

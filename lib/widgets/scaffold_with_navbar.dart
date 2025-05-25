@@ -1,4 +1,3 @@
-// lib/widgets/scaffold_with_navbar.dart
 import 'package:cosmic_explorer/screens/main_nav/gallery_screen.dart';
 import 'package:cosmic_explorer/screens/main_nav/home_screen.dart';
 import 'package:cosmic_explorer/screens/main_nav/profile_screen.dart';

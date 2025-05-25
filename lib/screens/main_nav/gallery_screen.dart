@@ -1,4 +1,3 @@
-// lib/screens/gallery_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cosmic_explorer/models/gallery.dart';

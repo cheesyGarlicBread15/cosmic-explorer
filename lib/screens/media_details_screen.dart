@@ -1,4 +1,3 @@
-// lib/screens/media_details_screen.dart
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:url_launcher/url_launcher.dart';

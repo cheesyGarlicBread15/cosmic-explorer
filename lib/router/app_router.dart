@@ -1,4 +1,3 @@
-// lib/router/app_router.dart
 import 'package:cosmic_explorer/screens/auth/sign_in_screen.dart';
 import 'package:cosmic_explorer/screens/auth/sign_up_screen.dart';
 import 'package:cosmic_explorer/screens/gallery_detail_screen.dart';
@@ -77,7 +76,6 @@ class AppRouter {
         },
       ),
 
-      // Gallery detail routes (less specific, should come after)
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/gallery/:galleryId',
@@ -89,7 +87,6 @@ class AppRouter {
         },
       ),
 
-      // Fallback route for direct media access (redirect to recently viewed)
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: '/gallery/media/:nasaId',
