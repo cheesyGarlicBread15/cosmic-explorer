@@ -1,8 +1,8 @@
 // lib/screens/media_details_screen.dart
 import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:photo_view/photo_view.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 import 'package:cosmic_explorer/models/nasa_media.dart';
 import 'package:cosmic_explorer/services/nasa_service.dart';
 import 'package:cosmic_explorer/utils/responsive_utils.dart';
@@ -25,64 +25,11 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
   bool _isLoading = true;
   String? _error;
   bool _isDescriptionExpanded = false;
-  
-  // Video player controller
-  VideoPlayerController? _videoController;
-  bool _isVideoInitialized = false;
-  bool _videoHasError = false;
-  
-  // Audio player
-  final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isAudioPlaying = false;
-  bool _isAudioLoading = false;
-  bool _audioHasError = false;
-  Duration _audioDuration = Duration.zero;
-  Duration _audioPosition = Duration.zero;
 
   @override
   void initState() {
     super.initState();
     _loadMediaDetails();
-    _setupAudioListeners();
-  }
-
-  @override
-  void dispose() {
-    // Safely dispose video controller
-    _videoController?.pause();
-    _videoController?.dispose();
-    
-    // Safely dispose audio player
-    _audioPlayer.stop();
-    _audioPlayer.dispose();
-    
-    super.dispose();
-  }
-
-  void _setupAudioListeners() {
-    _audioPlayer.onDurationChanged.listen((duration) {
-      if (mounted) {
-        setState(() {
-          _audioDuration = duration;
-        });
-      }
-    });
-
-    _audioPlayer.onPositionChanged.listen((position) {
-      if (mounted) {
-        setState(() {
-          _audioPosition = position;
-        });
-      }
-    });
-
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (mounted) {
-        setState(() {
-          _isAudioPlaying = state == PlayerState.playing;
-        });
-      }
-    });
   }
 
   Future<void> _loadMediaDetails() async {
@@ -92,13 +39,11 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
         _error = null;
       });
 
-      // Search for the specific media item by NASA ID
       final collection = await NasaService.searchMedia(
         query: widget.nasaId,
-        pageSize: 50, // Increase page size to find the specific item
+        pageSize: 50,
       );
 
-      // Find the exact match by NASA ID
       NasaMediaItem? foundItem;
       for (final item in collection.items) {
         if (item.nasaId == widget.nasaId) {
@@ -108,12 +53,10 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
       }
 
       if (foundItem != null) {
-        // Load asset URLs
         List<String> assetUrls = [];
         try {
           assetUrls = await NasaService.getAssetUrls(widget.nasaId);
         } catch (e) {
-          // Asset URLs might not be available for all media
           print('Could not load asset URLs: $e');
         }
 
@@ -122,11 +65,6 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
           _assetUrls = assetUrls;
           _isLoading = false;
         });
-
-        // Initialize media players if we have assets
-        if (assetUrls.isNotEmpty) {
-          _initializeMediaPlayer();
-        }
       } else {
         setState(() {
           _error = 'Media item not found';
@@ -138,90 +76,6 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
         _error = e.toString();
         _isLoading = false;
       });
-    }
-  }
-
-  Future<void> _initializeMediaPlayer() async {
-    if (_assetUrls.isEmpty) return;
-    
-    final originalAssetUrl = _assetUrls[0];
-    final mediaType = _mediaItem!.mediaType.toLowerCase();
-    
-    if (mediaType == 'video') {
-      await _initializeVideoPlayer(originalAssetUrl);
-    } else if (mediaType == 'audio') {
-      await _initializeAudioPlayer(originalAssetUrl);
-    }
-  }
-
-  Future<void> _initializeVideoPlayer(String videoUrl) async {
-    try {
-      // Dispose previous controller if exists
-      await _videoController?.dispose();
-      
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
-      
-      // Add timeout for initialization
-      await _videoController!.initialize().timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          throw Exception('Video initialization timeout - this may not be a direct video file');
-        },
-      );
-      
-      if (mounted) {
-        setState(() {
-          _isVideoInitialized = true;
-          _videoHasError = false;
-        });
-      }
-    } catch (e) {
-      print('Error initializing video player: $e');
-      print('Video URL: $videoUrl');
-      if (mounted) {
-        setState(() {
-          _isVideoInitialized = false;
-          _videoHasError = true;
-        });
-      }
-    }
-  }
-
-  Future<void> _initializeAudioPlayer(String audioUrl) async {
-    try {
-      if (mounted) {
-        setState(() {
-          _isAudioLoading = true;
-          _audioHasError = false;
-        });
-      }
-      
-      // Stop any previous audio
-      await _audioPlayer.stop();
-      
-      // Add timeout for audio loading
-      await _audioPlayer.setSourceUrl(audioUrl).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          throw Exception('Audio loading timeout - this may not be a direct audio file');
-        },
-      );
-      
-      if (mounted) {
-        setState(() {
-          _isAudioLoading = false;
-          _audioHasError = false;
-        });
-      }
-    } catch (e) {
-      print('Error initializing audio player: $e');
-      print('Audio URL: $audioUrl');
-      if (mounted) {
-        setState(() {
-          _isAudioLoading = false;
-          _audioHasError = true;
-        });
-      }
     }
   }
 
@@ -308,7 +162,7 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
         children: [
           _buildMediaPreview(),
           _buildMediaInfo(),
-          if (_assetUrls.isNotEmpty) _buildMediaPlayer(),
+          if (_assetUrls.isNotEmpty) _buildMediaViewer(),
         ],
       ),
     );
@@ -326,7 +180,6 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Left side - Media preview
                 Expanded(
                   flex: 2,
                   child: Card(
@@ -336,7 +189,6 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
                   ),
                 ),
                 const SizedBox(width: 32),
-                // Right side - Media info
                 Expanded(
                   flex: 3,
                   child: Column(
@@ -345,7 +197,7 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
                       _buildMediaInfoContent(),
                       if (_assetUrls.isNotEmpty) ...[
                         const SizedBox(height: 32),
-                        _buildMediaPlayerContent(),
+                        _buildMediaViewerContent(),
                       ],
                     ],
                   ),
@@ -702,65 +554,71 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
     );
   }
 
-  Widget _buildMediaPlayer() {
+  Widget _buildMediaViewer() {
     return Padding(
       padding: ResponsiveUtils.getContentPadding(context),
-      child: _buildMediaPlayerContent(),
+      child: _buildMediaViewerContent(),
     );
   }
 
-  Widget _buildMediaPlayerContent() {
+  Widget _buildMediaViewerContent() {
     if (_assetUrls.isEmpty) return const SizedBox.shrink();
-    
-    final originalAssetUrl = _assetUrls[0]; // Get the first (original quality) asset
-    final mediaType = _mediaItem!.mediaType.toLowerCase();
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Original Media',
+          'Media File',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
         ),
         const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: _buildMediaPlayerByType(originalAssetUrl, mediaType),
-        ),
+        _buildMediaTypeViewer(),
       ],
     );
   }
 
-  Widget _buildMediaPlayerByType(String assetUrl, String mediaType) {
+  Widget _buildMediaTypeViewer() {
+    final mediaType = _mediaItem!.mediaType.toLowerCase();
+    final mediaUrl = _findBestMediaFile(mediaType);
+    
+    if (mediaUrl == null) {
+      return _buildNoMediaFound();
+    }
+    
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: _buildMediaByType(mediaUrl, mediaType),
+    );
+  }
+
+  Widget _buildMediaByType(String url, String mediaType) {
     switch (mediaType) {
       case 'image':
-        return _buildImagePlayer(assetUrl);
+        return _buildImageViewer(url);
       case 'video':
-        return _buildVideoPlayer(assetUrl);
+        return _buildVideoLauncher(url);
       case 'audio':
-        return _buildAudioPlayer(assetUrl);
+        return _buildAudioLauncher(url);
       default:
-        return _buildDefaultPlayer(assetUrl);
+        return _buildGenericLauncher(url);
     }
   }
 
-  Widget _buildImagePlayer(String imageUrl) {
+  Widget _buildImageViewer(String imageUrl) {
     return Container(
       height: 400,
       child: PhotoView(
         imageProvider: NetworkImage(imageUrl),
         minScale: PhotoViewComputedScale.contained,
         maxScale: PhotoViewComputedScale.covered * 2.0,
-        backgroundDecoration: const BoxDecoration(
-          color: Colors.white,
-        ),
+        backgroundDecoration: const BoxDecoration(color: Colors.white),
         loadingBuilder: (context, event) {
           return Container(
             color: Colors.grey[100],
@@ -774,397 +632,35 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
                         : null,
                   ),
                   const SizedBox(height: 16),
-                  const Text('Loading original image...'),
+                  const Text('Loading image...'),
                 ],
               ),
             ),
           );
         },
         errorBuilder: (context, error, stackTrace) {
-          return Container(
-            height: 400,
-            color: Colors.grey[100],
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 48,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Could not load image',
-                    style: TextStyle(color: Colors.grey[600]),
-                  ),
-                ],
-              ),
-            ),
-          );
+          return _buildImageError(imageUrl);
         },
       ),
     );
   }
 
-  Widget _buildVideoPlayer(String videoUrl) {
-    if (_videoController == null || !_isVideoInitialized) {
-      return Container(
-        height: 300,
-        color: Colors.black,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (_videoHasError) ...[
-                Icon(
-                  Icons.error_outline,
-                  size: 48,
-                  color: Colors.white,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Video Player Unavailable',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'This might be a metadata file or requires\nexternal video player',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Video URL: $videoUrl'),
-                        action: SnackBarAction(
-                          label: 'Copy',
-                          onPressed: () {
-                            // Could implement clipboard copy here
-                          },
-                        ),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.open_in_new, size: 16),
-                  label: Text('View URL'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ] else ...[
-                const CircularProgressIndicator(color: Colors.white),
-                const SizedBox(height: 16),
-                const Text(
-                  'Loading video...',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ],
-            ],
-          ),
-        ),
-      );
-    }
-
+  Widget _buildImageError(String imageUrl) {
     return Container(
-      height: 300,
-      color: Colors.black,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          VideoPlayer(_videoController!),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.8),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-              child: VideoProgressIndicator(
-                _videoController!,
-                allowScrubbing: true,
-                colors: const VideoProgressColors(
-                  playedColor: Colors.deepPurple,
-                  bufferedColor: Colors.grey,
-                  backgroundColor: Colors.white24,
-                ),
-              ),
-            ),
-          ),
-          FloatingActionButton(
-            onPressed: () {
-              setState(() {
-                if (_videoController!.value.isPlaying) {
-                  _videoController!.pause();
-                } else {
-                  _videoController!.play();
-                }
-              });
-            },
-            backgroundColor: Colors.deepPurple.withOpacity(0.8),
-            child: Icon(
-              _videoController!.value.isPlaying ? Icons.pause : Icons.play_arrow,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAudioPlayer(String audioUrl) {
-    if (_audioHasError) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        color: Colors.grey[50],
-        child: Center(
-          child: Column(
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: Colors.grey[600],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Audio Player Unavailable',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This might be a metadata file or requires\nexternal audio player',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Audio URL: $audioUrl'),
-                      action: SnackBarAction(
-                        label: 'Copy',
-                        onPressed: () {
-                          // Could implement clipboard copy here
-                        },
-                      ),
-                    ),
-                  );
-                },
-                icon: Icon(Icons.open_in_new, size: 16),
-                label: Text('View URL'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      color: Colors.grey[50],
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: Icon(
-                  Icons.audiotrack,
-                  size: 30,
-                  color: Colors.deepPurple,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _mediaItem!.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'NASA Audio File',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          
-          // Progress bar
-          Column(
-            children: [
-              SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                  trackHeight: 3,
-                ),
-                child: Slider(
-                  value: _audioDuration.inMilliseconds > 0
-                      ? _audioPosition.inMilliseconds / _audioDuration.inMilliseconds
-                      : 0.0,
-                  onChanged: (value) async {
-                    final position = Duration(
-                      milliseconds: (value * _audioDuration.inMilliseconds).round(),
-                    );
-                    await _audioPlayer.seek(position);
-                  },
-                  activeColor: Colors.deepPurple,
-                  inactiveColor: Colors.grey[300],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _formatDuration(_audioPosition),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    Text(
-                      _formatDuration(_audioDuration),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Control buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: () async {
-                  final position = _audioPosition - const Duration(seconds: 10);
-                  await _audioPlayer.seek(position.isNegative ? Duration.zero : position);
-                },
-                icon: const Icon(Icons.replay_10),
-                iconSize: 32,
-                color: Colors.deepPurple,
-              ),
-              const SizedBox(width: 20),
-              _isAudioLoading
-                  ? const CircularProgressIndicator()
-                  : FloatingActionButton(
-                      onPressed: () async {
-                        if (_isAudioPlaying) {
-                          await _audioPlayer.pause();
-                        } else {
-                          await _audioPlayer.resume();
-                        }
-                      },
-                      backgroundColor: Colors.deepPurple,
-                      child: Icon(
-                        _isAudioPlaying ? Icons.pause : Icons.play_arrow,
-                        color: Colors.white,
-                      ),
-                    ),
-              const SizedBox(width: 20),
-              IconButton(
-                onPressed: () async {
-                  final position = _audioPosition + const Duration(seconds: 10);
-                  final maxPosition = _audioDuration;
-                  await _audioPlayer.seek(position > maxPosition ? maxPosition : position);
-                },
-                icon: const Icon(Icons.forward_10),
-                iconSize: 32,
-                color: Colors.deepPurple,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDefaultPlayer(String assetUrl) {
-    return Container(
-      height: 150,
+      height: 200,
       color: Colors.grey[50],
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.insert_drive_file,
-              size: 48,
-              color: Colors.grey[600],
-            ),
+            Icon(Icons.error_outline, size: 48, color: Colors.grey[600]),
             const SizedBox(height: 16),
-            const Text(
-              'Media File Available',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Media URL: $assetUrl'),
-                    action: SnackBarAction(
-                      label: 'Copy',
-                      onPressed: () {
-                        // You can implement clipboard copy here if needed
-                      },
-                    ),
-                  ),
-                );
-              },
-              child: const Text('View Media'),
+            Text('Could not load image', style: TextStyle(color: Colors.grey[600])),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () => _launchUrl(imageUrl),
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('Open in Browser'),
             ),
           ],
         ),
@@ -1172,16 +668,236 @@ class _MediaDetailsScreenState extends State<MediaDetailsScreen> {
     );
   }
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, '0');
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-    
-    if (hours > 0) {
-      return '${twoDigits(hours)}:${twoDigits(minutes)}:${twoDigits(seconds)}';
-    } else {
-      return '${twoDigits(minutes)}:${twoDigits(seconds)}';
+  Widget _buildVideoLauncher(String videoUrl) {
+    return Container(
+      height: 300,
+      color: Colors.black,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.play_circle_filled, size: 80, color: Colors.white.withOpacity(0.8)),
+            const SizedBox(height: 20),
+            Text(
+              _mediaItem!.title,
+              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Click to play video',
+              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _launchUrl(videoUrl),
+                  icon: const Icon(Icons.play_arrow, size: 20),
+                  label: const Text('Play Video'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                TextButton.icon(
+                  onPressed: () => _copyToClipboard(videoUrl),
+                  icon: const Icon(Icons.copy, size: 16, color: Colors.white70),
+                  label: const Text('Copy URL', style: TextStyle(color: Colors.white70)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAudioLauncher(String audioUrl) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      color: Colors.grey[50],
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(40),
+                ),
+                child: const Icon(Icons.audiotrack, size: 40, color: Colors.deepPurple),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _mediaItem!.title,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'NASA Audio File',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => _launchUrl(audioUrl),
+                icon: const Icon(Icons.play_arrow, size: 20),
+                label: const Text('Play Audio'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _copyToClipboard(audioUrl),
+                icon: const Icon(Icons.copy, size: 16),
+                label: const Text('Copy URL'),
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.deepPurple),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenericLauncher(String url) {
+    return Container(
+      height: 150,
+      color: Colors.grey[50],
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.insert_drive_file, size: 48, color: Colors.grey[600]),
+            const SizedBox(height: 16),
+            Text(
+              'Media File Available',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => _launchUrl(url),
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('Open'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _copyToClipboard(url),
+                  icon: const Icon(Icons.copy, size: 16),
+                  label: const Text('Copy URL'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoMediaFound() {
+    return Container(
+      height: 150,
+      color: Colors.grey[50],
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, size: 48, color: Colors.grey[600]),
+            const SizedBox(height: 16),
+            Text(
+              'No Media File Found',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'This item may only contain thumbnails',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _findBestMediaFile(String mediaType) {
+    for (String url in _assetUrls) {
+      final lowerUrl = url.toLowerCase();
+      
+      if (mediaType == 'video' && 
+          (lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || 
+           lowerUrl.endsWith('.avi') || lowerUrl.endsWith('.webm'))) {
+        return url;
+      }
+      
+      if (mediaType == 'audio' && 
+          (lowerUrl.endsWith('.mp3') || lowerUrl.endsWith('.wav') || 
+           lowerUrl.endsWith('.m4a') || lowerUrl.endsWith('.aac'))) {
+        return url;
+      }
+      
+      if (mediaType == 'image' && 
+          (lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg') || 
+           lowerUrl.endsWith('.png') || lowerUrl.endsWith('.gif')) &&
+          !lowerUrl.contains('~thumb') && !lowerUrl.contains('~small')) {
+        return url;
+      }
     }
+    
+    return null;
+  }
+
+  Future<void> _launchUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      _showErrorSnackBar('Error opening URL: $e');
+    }
+  }
+
+  void _copyToClipboard(String url) {
+    Clipboard.setData(ClipboardData(text: url));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('URL copied: ${url.split('/').last}'),
+        action: SnackBarAction(
+          label: 'Open',
+          onPressed: () => _launchUrl(url),
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 }
