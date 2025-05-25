@@ -109,7 +109,7 @@ class ScaffoldWithNavbar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
-                      Icons.explore,
+                      Icons.rocket_launch,
                       size: 32,
                       color: Colors.deepPurple,
                     ),

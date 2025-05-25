@@ -37,7 +37,7 @@ class MediaCard extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 3,
-                  child: _buildMediaPreview(context),
+                  child: _buildMediaPreview(context)
                 ),
                 Expanded(
                   flex: 2,
@@ -46,9 +46,8 @@ class MediaCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildMediaTypeChip(context),
-                        SizedBox(height: isMobile ? 8 : 12),
-                        Expanded(
+                        // Fixed: Removed Expanded wrapper and used Flexible instead
+                        Flexible(
                           child: Text(
                             mediaItem.title,
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -150,17 +149,7 @@ class MediaCard extends StatelessWidget {
           Positioned(
             top: 8,
             right: 8,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                mediaItem.mediaTypeIcon,
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
+            child: _buildMediaTypeChip(context)
           ),
         ],
       ),

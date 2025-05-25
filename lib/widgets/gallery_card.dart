@@ -20,19 +20,21 @@ class GalleryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
-    
+
     return Card(
       elevation: gallery.isRecentlyViewed ? 8 : (isMobile ? 4 : 6),
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(isMobile ? 12 : 16),
-        side: gallery.isRecentlyViewed 
+        side: gallery.isRecentlyViewed
             ? BorderSide(color: Colors.deepPurple, width: 2)
             : BorderSide.none,
       ),
       child: InkWell(
         onTap: onTap,
-        onLongPress: (onEdit != null || onDelete != null) ? () => _showOptions(context) : null,
+        onLongPress: (onEdit != null || onDelete != null)
+            ? () => _showOptions(context)
+            : null,
         child: Stack(
           children: [
             Column(
@@ -49,46 +51,50 @@ class GalleryCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (gallery.isRecentlyViewed) _buildSpecialBadge(context),
-                        SizedBox(height: gallery.isRecentlyViewed ? 8 : 0),
-                        Expanded(
-                          child: Text(
-                            gallery.name,
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: isMobile ? 16 : 18,
-                                ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                gallery.name,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: isMobile ? 14 : 16,
+                                    ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                gallery.isRecentlyViewed
+                                    ? gallery.formattedLastModified
+                                    : 'Created ${gallery.formattedDate}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Colors.grey[500],
+                                      fontSize: isMobile ? 11 : 12,
+                                    ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          '${gallery.mediaCount} item${gallery.mediaCount == 1 ? '' : 's'}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey[600],
-                                fontSize: isMobile ? 12 : 13,
-                              ),
-                        ),
                         const SizedBox(height: 2),
-                        Text(
-                          gallery.isRecentlyViewed 
-                              ? gallery.formattedLastModified
-                              : 'Created ${gallery.formattedDate}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey[500],
-                                fontSize: isMobile ? 11 : 12,
-                              ),
-                        ),
                       ],
                     ),
                   ),
                 ),
               ],
             ),
-            
+
             // Options button for user galleries
-            if ((onEdit != null || onDelete != null) && !gallery.isRecentlyViewed)
+            if ((onEdit != null || onDelete != null) &&
+                !gallery.isRecentlyViewed)
               Positioned(
                 top: 8,
                 right: 8,
@@ -132,7 +138,7 @@ class GalleryCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: gallery.isRecentlyViewed 
+          colors: gallery.isRecentlyViewed
               ? [
                   Colors.deepPurple.withOpacity(0.2),
                   Colors.deepPurple.withOpacity(0.4),
@@ -143,23 +149,77 @@ class GalleryCard extends StatelessWidget {
                 ],
         ),
       ),
-      child: gallery.coverImageUrl != null
-          ? Image.network(
-              gallery.coverImageUrl!,
-              width: double.infinity,
-              height: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildPlaceholder(context);
-              },
-            )
-          : _buildPlaceholder(context),
+      child: Stack(
+        children: [
+          // Show most recent media or fallback to placeholder
+          gallery.coverImageUrl != null
+              ? Image.network(
+                  gallery.coverImageUrl!,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return _buildLoadingPlaceholder(context);
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildPlaceholder(context);
+                  },
+                )
+              : _buildPlaceholder(context),
+
+          // Overlay showing item count if gallery has multiple items
+          if (gallery.mediaCount > 1)
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.collections,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${gallery.mediaCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingPlaceholder(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      child: Center(
+        child: CircularProgressIndicator(
+          color: gallery.isRecentlyViewed ? Colors.deepPurple : Colors.blue,
+        ),
+      ),
     );
   }
 
   Widget _buildPlaceholder(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
-    
+
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -167,17 +227,25 @@ class GalleryCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            gallery.isRecentlyViewed ? Icons.history : Icons.photo_library,
+            gallery.isEmpty
+                ? Icons.add_photo_alternate_outlined
+                : (gallery.isRecentlyViewed
+                    ? Icons.history
+                    : Icons.collections),
             size: isMobile ? 48 : 64,
-            color: gallery.isRecentlyViewed 
+            color: gallery.isRecentlyViewed
                 ? Colors.deepPurple.withOpacity(0.7)
                 : Colors.blue.withOpacity(0.7),
           ),
           SizedBox(height: isMobile ? 8 : 12),
           Text(
-            gallery.isEmpty ? 'Empty Gallery' : '${gallery.mediaCount} Items',
+            gallery.isEmpty
+                ? 'Add Photos'
+                : (gallery.isRecentlyViewed
+                    ? 'Recently Viewed'
+                    : '${gallery.mediaCount} Items'),
             style: TextStyle(
-              color: gallery.isRecentlyViewed 
+              color: gallery.isRecentlyViewed
                   ? Colors.deepPurple.withOpacity(0.8)
                   : Colors.blue.withOpacity(0.8),
               fontSize: isMobile ? 12 : 14,
@@ -189,39 +257,9 @@ class GalleryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSpecialBadge(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.deepPurple.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.deepPurple.withOpacity(0.5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.star,
-            size: 14,
-            color: Colors.deepPurple[700],
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'SPECIAL',
-            style: TextStyle(
-              color: Colors.deepPurple[700],
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showOptions(BuildContext context) {
     final options = <Widget>[];
-    
+
     // Always add view option
     options.add(
       ListTile(
@@ -233,7 +271,7 @@ class GalleryCard extends StatelessWidget {
         },
       ),
     );
-    
+
     // Add edit option if available
     if (onEdit != null) {
       options.add(
@@ -247,7 +285,7 @@ class GalleryCard extends StatelessWidget {
         ),
       );
     }
-    
+
     // Add delete option if available
     if (onDelete != null) {
       options.add(
@@ -286,21 +324,25 @@ class GalleryCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            
+
             // Gallery info
             Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: gallery.isRecentlyViewed 
+                    color: gallery.isRecentlyViewed
                         ? Colors.deepPurple.withOpacity(0.1)
                         : Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    gallery.isRecentlyViewed ? Icons.history : Icons.photo_library,
-                    color: gallery.isRecentlyViewed ? Colors.deepPurple : Colors.blue,
+                    gallery.isRecentlyViewed
+                        ? Icons.history
+                        : Icons.collections,
+                    color: gallery.isRecentlyViewed
+                        ? Colors.deepPurple
+                        : Colors.blue,
                     size: 24,
                   ),
                 ),
@@ -311,9 +353,10 @@ class GalleryCard extends StatelessWidget {
                     children: [
                       Text(
                         gallery.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -329,7 +372,7 @@ class GalleryCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            
+
             // Options
             ...options,
           ],
